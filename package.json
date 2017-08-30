@@ -17,7 +17,8 @@
     "boom": "3.x.x",
     "hoek": "4.x.x",
     "joi": "8.x.x",
-    "traverse": "0.6.x"
+    "traverse": "0.6.x",
+    "wreck": "^12.2.2"
   },
   "devDependencies": {
     "code": "2.x.x",
