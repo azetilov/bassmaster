@@ -7,6 +7,7 @@ const Code = require('code');
 const Lab = require('lab');
 const Sinon = require('sinon');
 const Internals = require('./internals.js');
+const nock = require('nock');
 
 // Test shortcuts
 
@@ -14,6 +15,7 @@ const lab = exports.lab = Lab.script();
 const describe = lab.describe;
 const it = lab.it;
 const before = lab.before;
+const after = lab.after;
 const expect = Code.expect;
 
 let server = null;
@@ -604,6 +606,68 @@ describe('Batch', () => {
             expect(res.length).to.equal(1);
             expect(res[0]).to.deep.equal(null);
 
+            done();
+        });
+    });
+
+    describe('proxy', () => {
+        const proxy = 'http://localhost:9080';
+
+        before((done) => {
+            const options = { proxy: { enabled: true, url: proxy } };
+            server = Internals.setupServer(done, options);
+        });
+        
+        it('returns successful response from proxy', (done) => {
+
+            nock(proxy)
+                .get('/profile')
+                .reply(200, JSON.stringify({
+                    id: '24kj5l454',
+                    name: 'John Proxy'
+                }));
+
+            Internals.makeRequest(server, '{ "requests": [{ "method": "get", "path": "/profile" }] }', (res) => {
+                expect(res[0].id).to.equal('24kj5l454');
+                expect(res[0].name).to.equal('John Proxy');
+                expect(res.length).to.equal(1);
+                done();
+            });
+        });
+        
+        it('returns failing hapi response from proxy', (done) => {
+
+            nock(proxy)
+                .get('/profile')
+                .reply(404, JSON.stringify({
+                    statusCode: 404,
+                    error: 'Not Found'
+                }));
+
+            Internals.makeRequest(server, '{ "requests": [{ "method": "get", "path": "/profile" }] }', (res) => {
+                expect(res[0].statusCode).to.equal(404);
+                expect(res[0].error).to.equal('Not Found');
+                expect(res.length).to.equal(1);
+                done();
+            });
+        });
+
+
+        it('returns failing empty response from proxy', (done) => {
+            
+            nock(proxy)
+                .get('/profile')
+                .reply(500);
+
+            Internals.makeRequest(server, '{ "requests": [{ "method": "get", "path": "/profile" }] }', (res) => {
+                expect(res[0]).to.equal('');
+                expect(res.length).to.equal(1);
+                done();
+            });
+        });
+
+        after((done) => {
+            nock.cleanAll();
             done();
         });
     });

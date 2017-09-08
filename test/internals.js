@@ -174,7 +174,7 @@ const echoHandler = function (request, reply) {
     return reply(request.payload);
 };
 
-module.exports.setupServer = function (done) {
+module.exports.setupServer = function (done, options) {
 
     const server = new Hapi.Server();
     server.connection();
@@ -212,7 +212,7 @@ module.exports.setupServer = function (done) {
         { method: 'GET', path: '/redirect', handler: redirectHandler }
     ]);
 
-    server.register(Bassmaster, done);
+    server.register({ register: Bassmaster, options }, done);
     return server;
 };
 
